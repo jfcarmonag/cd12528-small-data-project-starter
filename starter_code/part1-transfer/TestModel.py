@@ -5,7 +5,7 @@ import numpy as np
 
 def imshow(inp, title=None):
     """Imshow for Tensor."""
-    inp = inp.numpy().transpose((1, 2, 0))
+    inp = inp.cpu().numpy().transpose((1, 2, 0))
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
     inp = std * inp + mean
@@ -19,7 +19,7 @@ def test_model(test_loader, trained_model, class_names):
     print('showing test results')
     with torch.no_grad():
         #Get correct device
-        device = torch.device("cude:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         trained_model = trained_model.to(device)
         for i, (inputs, labels) in enumerate(test_loader):
             inputs = inputs.to(device)
@@ -30,4 +30,4 @@ def test_model(test_loader, trained_model, class_names):
 
             for i in range(len(inputs)):
                 inp = inputs.data[i]
-                imshow(inp, class_names[preds[i]])
+                imshow(inp, class_names[preds[i].item()])

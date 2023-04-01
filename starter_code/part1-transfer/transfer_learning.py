@@ -8,8 +8,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.optim import lr_scheduler
 from torchvision import datasets, transforms 
-from TrainModel import train_model
-from TestModel import test_model
+
 from torchvision import models
 
 from collections import OrderedDict
@@ -48,7 +47,7 @@ data_transforms = {
 
 
 #Set up DataLoaders (train, val, and test)
-batch_size = 10
+batch_size = 5
 num_workers = 4
 
 #<<<YOUR CODE HERE>>>
@@ -62,12 +61,13 @@ image_datasets = {
     'test': datasets.ImageFolder(data_dir + '/test', data_transforms['test']),
 }
 
-train_loader = torch.utils.data.DataLoader(image_datasets['train'], batch_size=64, shuffle=True)
-val_loader = torch.utils.data.DataLoader(image_datasets['valid'], batch_size=64, shuffle=True)
-test_loader = torch.utils.data.DataLoader(image_datasets['test'], batch_size=64, shuffle=True)
+train_loader = torch.utils.data.DataLoader(image_datasets['train'], batch_size=batch_size, shuffle=True)
+val_loader = torch.utils.data.DataLoader(image_datasets['valid'], batch_size=batch_size, shuffle=True)
+test_loader = torch.utils.data.DataLoader(image_datasets['test'], batch_size=batch_size, shuffle=True)
 
-class_names = {idx: cl for idx, cl in image_datasets['train'].class_to_idx.items()}
+class_names = {idx: cl for cl, idx in image_datasets['train'].class_to_idx.items()}
 
+print(class_names)
 # Using the VGG16 model for transfer learning 
 # 1. Get trained model weights
 # 2. Freeze layers so they won't all be trained again with our data
@@ -80,12 +80,16 @@ for param in model.parameters():
     param.requires_grad = False
 
 classifier = nn.Sequential(OrderedDict([
-                          ('fc1', nn.Linear(25088, 1000)),
-                          ('relu1', nn.ReLU()),
-                          ('dropout1', nn.Dropout(p=0.5)),
-                          ('fc2', nn.Linear(1000, 3)),
-                          ('output', nn.LogSoftmax(dim=1))
-                          ]))
+    ('fc1', nn.Linear(25088, 5000)),
+    ('relu1', nn.ReLU()),
+    ('dropout1', nn.Dropout(p=0.5)),
+    ('fc2', nn.Linear(5000, 500)),
+    ('relu2', nn.ReLU()),
+    ('dropout2', nn.Dropout(p=0.5)),
+    ('fc3', nn.Linear(500, 3)),
+    ('output', nn.LogSoftmax(dim=1))
+]))
+
     
 model.classifier = classifier
 
@@ -99,11 +103,11 @@ model.to(device)
 # 4. train_lr_scheduler 
 
 #<<<YOUR CODE HERE>>>
-num_epochs = 2
+num_epochs = 30
 criterion = nn.NLLLoss()
 lr=0.001
 optimizer = optim.Adam(model.classifier.parameters(), lr=lr)
-train_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+train_lr_scheduler = lr_scheduler.StepLR(optimizer, step_size=1, gamma=0.5)
 
 
 

@@ -1,4 +1,3 @@
-from TestModel import test_model
 import pandas as pd
 import numpy as np
 import torch
@@ -126,19 +125,73 @@ def generate_fake(mu, logvar, no_samples, scaler, model):
 # When you have all the code in place to generate synthetic data, uncomment the code below to run the model and the tests. 
 def main():
     # Get a device and set up data paths. You need paths for the original data, the data with just loan status = 1 and the new augmented dataset.
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ORIGINAL_DATA_PATH = "/content/data/loan_continuous.csv"
+    LOAN_DATA_PATH = "data/loan_positive.csv"
+    DATA_PATH = 'data/loan_continuous_expanded.csv'
 
+    df = pd.read_csv(ORIGINAL_DATA_PATH)
     # Split the data out with loan status = 1
-
+    positive_loan = df[df['Loan Status']==1]
+    positive_loan.to_csv(LOAN_DATA_PATH)
     # Create DataLoaders for training and validation 
+    
+
+
+
+    train_dataset = DataBuilder(ORIGINAL_DATA_PATH, train=True)
+    val_dataset = DataBuilder(ORIGINAL_DATA_PATH, train=False)
+    batch_size = 64  
+
+    trainloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    valloader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
     # Train and validate the model 
 
-    #scaler = trainloader.dataset.standardizer
-    #fake_data = generate_fake(mu, logvar, 50000, scaler, model)
+    D_in = train_dataset.x.shape[1]
+    
+
+    model = Autoencoder(D_in=D_in).to(device)
+    criterion = CustomLoss()
+    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    num_epochs = 100
+
+    model.train()
+
+    for epoch in range(num_epochs):
+        train_loss = 0
+        for batch in trainloader:
+            batch = batch.to(device)
+            
+            optimizer.zero_grad()
+            recon_batch, mu, logvar = model(batch)
+            
+            loss = criterion(recon_batch, batch, mu, logvar)
+            loss.backward()
+            
+            train_loss += loss.item()
+            optimizer.step()
+
+        print(f'Epoch {epoch + 1}/{num_epochs}, Train Loss: {train_loss / len(trainloader.dataset):.6f}')
+    model.eval()
+
+    val_loss = 0
+    with torch.no_grad():
+        for batch in valloader:
+            batch = batch.to(device)
+            recon_batch, mu, logvar = model(batch)
+            loss = criterion(recon_batch, batch, mu, logvar)
+            val_loss += loss.item()
+
+    print(f'Validation Loss: {val_loss / len(valloader.dataset):.6f}')
+
+    scaler = trainloader.dataset.standardizer
+    fake_data = generate_fake(mu, logvar, 50000, scaler, model)
 
     # Combine the new data with original dataset
-
-    DATA_PATH = 'data/loan_continuous_expanded.csv'
+    fake_df = pd.DataFrame(fake_data, columns=df.columns)
+    merged_df = pd.concat([df, fake_df], ignore_index=True)
+    merged_df.to_csv(DATA_PATH)
     test_model(DATA_PATH)
 
 if __name__ == '__main__':
