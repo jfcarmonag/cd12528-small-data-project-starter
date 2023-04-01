@@ -126,7 +126,7 @@ def generate_fake(mu, logvar, no_samples, scaler, model):
 def main():
     # Get a device and set up data paths. You need paths for the original data, the data with just loan status = 1 and the new augmented dataset.
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    ORIGINAL_DATA_PATH = "/content/data/loan_continuous.csv"
+    ORIGINAL_DATA_PATH = "data/loan_continuous.csv"
     LOAN_DATA_PATH = "data/loan_positive.csv"
     DATA_PATH = 'data/loan_continuous_expanded.csv'
 
