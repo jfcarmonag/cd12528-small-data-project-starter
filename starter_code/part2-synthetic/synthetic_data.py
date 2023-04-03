@@ -8,6 +8,8 @@ from torch.autograd import Variable
 from torch.utils.data import Dataset, DataLoader
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+from TestModel import test_model 
+
 
 def load_and_standardize_data(path):
     df = pd.read_csv(path, sep=',')
